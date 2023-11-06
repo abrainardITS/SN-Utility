@@ -5,7 +5,6 @@ var OTtables = "cmdb_ci_ot,cmdb_ci_ot_cnc,cmdb_ci_ot_control,cmdb_ci_ot_control_
 
 var tableArr = OTtables.split(',');
 
-//process(VIEW_NAME, tableArr[0]);
 
 for (var i = 0; i < tableArr.length; i++) {
     process(VIEW_NAME, tableArr[i]);
