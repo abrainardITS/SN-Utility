@@ -1,4 +1,4 @@
-var APP_SYS_ID = 'feec3b7997ae391088ae3e0e6253afe2';
+var APP_SYS_ID = 'YOUR_APP_SYS_ID';
 
 //TODO the sn_codesearch_table could possibly be used to help populate the list of classes to search - although it doesn't include Tables, Dictionary, Properties, etc
 var SYS_METADATA_CLASSES = 'sys_script_include,sys_properties,sys_data_source,sysauto,sysauto_script,scheduled_import_set,sn_sec_int_integration,sn_sec_int_impl,sys_ui_page,sys_rest_message,sys_script_fix,db_image';
