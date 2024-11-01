@@ -1,0 +1,124 @@
+/* 
+    Title: Pre-Publish application script
+    Author: Aaron Brainard
+*/
+
+var applicationId = 'SYS_APP_ID';
+var integrationId = 'SN_SEC_INT_INTEGRATION_ID';
+var integrationTable = 'TABLE_NAME';
+
+//Remove User UI Lists
+var grSysUiList = new GlideRecord('sys_ui_list');
+grSysUiList.addEncodedQuery("sys_user!=NULL^sys_scope=" + applicationId);
+grSysUiList.deleteMultiple();
+
+//Remove User UI Views
+var grSysUiView = new GlideRecord('sys_ui_view');
+grSysUiView.addEncodedQuery("user!=NULL^sys_scope=" + applicationId);
+grSysUiView.deleteMultiple();
+
+//Remove User Service Portals
+var grSPP = new GlideRecord('sys_portal_page');
+grSPP.addEncodedQuery("user!=NULL^sys_scope=" + applicationId);
+grSPP.deleteMultiple();
+
+//Clear Users From Reports
+var grSysReport = new GlideRecord('sys_report');
+grSysReport.addEncodedQuery("sys_scope=" + applicationId);
+while (grSysReport.next()) {
+    grSysReport.user = '';
+    grSysReport.update();
+}
+
+//Remove user report groups
+var grSRUG = new GlideRecord('sys_report_users_groups');
+grSRUG.addEncodedQuery("user_id!=NULL^sys_scope=" + applicationId);
+grSRUG.deleteMultiple();
+
+//Remove existing integration implementations - except for the default one
+var grIntImpl = new GlideRecord('sn_sec_int_impl');
+grIntImpl.addQuery('integration', integrationId);
+grIntImpl.addQuery('is_default', false);
+grIntImpl.deleteMultiple();
+
+//Reset Integration Implementation config values
+var grSSIIC = new GlideRecord('sn_sec_int_impl_config');
+grSSIIC.addEncodedQuery("sys_scope=" + applicationId + "^implementation.is_default=true");
+grSSIIC.query();
+while (grSSIIC.next()) {
+
+    if (grSSIIC.configuration.elem_type == 'boolean') {
+        grSSIIC.value = 'true';
+    } else if (grSSIIC.configuration.name == 'api_page_size') {
+        grSSIIC.value = 500;
+    } else {
+        grSSIIC.value = '';
+        grSSIIC.password_value = '';
+    }
+
+    grSSIIC.update();
+}
+
+//Reset Default Integration Values
+var grDefaultIntegrations = new GlideRecord(integrationTable);
+grDefaultIntegrations.addEncodedQuery("instance.is_default=true");
+grDefaultIntegrations.query();
+while (grDefaultIntegrations.next()) {
+    grDefaultIntegrations.delta_start_time = '';
+    grDefaultIntegrations.run_as = '';
+    grDefaultIntegrations.active = false;
+    grDefaultIntegrations.update();
+}
+
+
+//set default delta days System Property to its default value (90 days)
+var grSysProperty = new GlideRecord('sys_properties');
+//TODO fill in your delta property name
+grSysProperty.addQuery('name', 'DELTA_PROPERTY_NAME');
+grSysProperty.query();
+if (grSysProperty.next()) {
+    grSysProperty.setValue('value', 90);
+    grSysProperty.update();
+}
+
+
+//TODO reset any system properties here
+gs.setProperty('APP_SCOPE.auto_close_stale_detections', 'false');
+gs.setProperty('APP_SCOPE.auto_close_stale_detection_after_days', '180');
+gs.setProperty('APP_SCOPE.api_token_object', '');
+gs.setProperty('APP_SCOPE.filter_out_auto_ignored_vulnerability_matches', 'true');
+gs.setProperty('APP_SCOPE.map_status_change_reason', 'true');
+
+resetGuidedSetup();
+
+
+function resetGuidedSetup() {
+    //Reset Guided Setup Progress
+    var rec = new GlideRecord('gsw_status_of_content');
+    rec.addEncodedQuery('sys_scope=' + applicationId);
+    rec.deleteMultiple();
+
+
+    var grGCL = new GlideRecord('gsw_change_log');
+    grGCL.addEncodedQuery("sys_scope=" + applicationId);
+    grGCL.orderByDesc('change_date');
+    grGCL.deleteMultiple();
+
+}
+
+//Remove all rogue scheduled data imports meant to execute after sgc code
+var grSIS = new GlideRecord('scheduled_import_set');
+grSIS.addEncodedQuery("sys_scope=" + applicationId);
+grSIS.deleteMultiple();
+
+function getVRSystemUser() {
+    var vrSystemUserGr = new GlideRecord('sys_user');
+    vrSystemUserGr.addQuery('user_name', 'VR.System');
+    vrSystemUserGr.setLimit(1);
+    vrSystemUserGr.query();
+    if (vrSystemUserGr.next()) {
+        return vrSystemUserGr.getUniqueValue();
+    }
+
+    return null;
+}
